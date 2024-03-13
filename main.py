@@ -271,6 +271,8 @@ def addTrap(file_path):
     addedTrap = False
 
     for line in lines:
+        if line.startswith('# BEGIN'):
+            return
         if addedTrap or line.startswith('#'):
             modified_lines.append(line)
         else:
