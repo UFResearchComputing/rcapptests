@@ -258,29 +258,13 @@ def checkJobStatus(args):
             logger.debug("Waiting for thread2")
             sys.exit(0)
 
+def read_bash_code(file_path):
+    with open(file_path, 'r') as file:
+        bash_code = file.read()
+    return bash_code
+
 def append_bash_code(file_path):
-    bash_code = '''
-    # BEGIN
-    set -o errtrace
-    trap 'catch $?' ERR
-    catch() {
-    echo "apptests caught an error:"
-    if [ "$1" != "0" ]; then
-        echo "Error code $1. Terminating!"
-        exit $1
-    fi
-    }
-
-    modules="ml"
-
-    for module in "$@"; do
-    modules+=" $module"
-    done
-    module purge .
-
-    eval "$modules"
-    # END
-    '''
+    bash_code = read_bash_code(os.path.join(os.getcwd(), 'trap.sh'))
     with open(file_path, 'r') as file:
         lines = file.readlines()
     modified_lines = []
