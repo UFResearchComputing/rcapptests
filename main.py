@@ -220,7 +220,8 @@ def checkJobStatus(args):
             #  If module name is invalid or test file is missing, add this job to 'testsCompleted' with respective status
             if(job.module not in testsCompleted and (job.jobStatus == JobStatus.MISSING or job.jobStatus == JobStatus.INVALID)):
                 logger.debug(job.jobStatus)
-                removeTrap(job.filepath)
+                if(os.path.exists(job.filepath)):
+                    removeTrap(job.filepath)
                 testsCompleted[job.module + str(job.dependencies)] = ()
                 continue
             # If job is submitted, check if there is any new status
