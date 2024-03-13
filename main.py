@@ -55,16 +55,15 @@ def parse_args(print_help=False):
         Internal tool to run application tests.
 
         How to test an application:
-        1) Copy sample test script from /data/apps/test/apptests/run.sh into
-        /data/apps/test/<app> where 'app' is the application to be tested.
+        1) Create a test script in /data/apps/test/<app> where 'app' is the 
+        application to be tested.
         2) Modify the test script as needed.
         3) Run the tests. (Eg: apptests -m <app>, apptests -mv app/version etc)
         4) Check the report and slurm_logs in /data/apps/test/apptests/, full
         paths will be shown once tests complete.
 
         Note: Custom test sciript paths and dependencies can be provided in
-        $HPC_APPTESTS_DIR/tests_config.yaml. However, the test file itself must be
-        adopted from /data/apps/test/apptests/run.sh. 
+        $HPC_APPTESTS_DIR/tests_config.yaml.
         """
     )
     parser.add_argument(
@@ -221,7 +220,7 @@ def checkJobStatus(args):
             #  If module name is invalid or test file is missing, add this job to 'testsCompleted' with respective status
             if(job.module not in testsCompleted and (job.jobStatus == JobStatus.MISSING or job.jobStatus == JobStatus.INVALID)):
                 logger.debug(job.jobStatus)
-                remove_bash_code(job.filepath)
+                removeTrap(job.filepath)
                 testsCompleted[job.module + str(job.dependencies)] = ()
                 continue
             # If job is submitted, check if there is any new status
@@ -245,7 +244,7 @@ def checkJobStatus(args):
                         job.testStatus = TestStatus.FAILED    
 
                     if(job.testStatus is not TestStatus.RUNNING and job.module not in testsCompleted):
-                        remove_bash_code(job.filepath)
+                        removeTrap(job.filepath)
                         testsCompleted[job.module + str(job.dependencies)] = testStatus
 
         # After processing the entire batch of test jobs for new upates, genrate the latest report
@@ -263,7 +262,7 @@ def read_bash_code(file_path):
         bash_code = file.read()
     return bash_code
 
-def append_bash_code(file_path):
+def addTrap(file_path):
     bash_code = read_bash_code(os.path.join(os.getcwd(), 'trap.sh'))
     with open(file_path, 'r') as file:
         lines = file.readlines()
@@ -280,10 +279,10 @@ def append_bash_code(file_path):
     with open(file_path, 'w') as file:
         file.writelines(modified_lines)
 
-def remove_bash_code(file_path):
+def removeTrap(file_path):
     with open(file_path, 'r') as file:
         lines = file.readlines()
-    print(lines)
+
     modified_lines = []
     inTrapBlock = False
 
@@ -365,7 +364,8 @@ def submitJob(lmod, yaml_config, module, _moduleVersion = None):
             if(os.path.exists(testFilePath)):
                 cmd = ['sbatch', testFilePath]
 
-                append_bash_code(testFilePath)
+                # Setting trap conditions and module loads in the test files
+                addTrap(testFilePath)
 
                 args.append(moduleVersion)
                 cmd.extend(args)

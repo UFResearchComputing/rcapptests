@@ -20,7 +20,7 @@ def generateReport(testStartTime, args, exit=False):
     test_data = {}
     report_name = "/data/apps/tests/apptests/Reports/" + testStartTime
     with open(report_name + ".txt", "wt") as report_file:
-        console = Console(file=report_file)
+        console = Console(file=report_file, width=750)
 
         if not exit:
             console.print("Test Status: Testing is in progress...... (Reload file for new results)\n")
