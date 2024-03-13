@@ -94,6 +94,14 @@ def parse_args(print_help=False):
             """,
     )
     parser.add_argument(
+        "-testall",
+        "--testall",
+        required = False,
+        help = """
+                Runs tests for all modules in the system. 
+            """,
+    )
+    parser.add_argument(
         "-d", "--debug", action="store_true", default=False, help=argparse.SUPPRESS
     )
     parser.add_argument(
@@ -273,10 +281,11 @@ def addTrap(file_path):
     for line in lines:
         if line.startswith('# BEGIN'):
             return
-        if addedTrap or line.startswith('#'):
+        if addedTrap or line.startswith('#') or line.startswith('\n'):
             modified_lines.append(line)
         else:
-            modified_lines.append(bash_code + '\n')
+            modified_lines.append(bash_code)
+            modified_lines.append(line)
             addedTrap = True
 
     with open(file_path, 'w') as file:
@@ -301,6 +310,72 @@ def removeTrap(file_path):
 
     with open(file_path, 'w') as file:
         file.writelines(modified_lines)
+
+def submitAllJobs(lmod, yaml_config):
+    count = 0
+    for module in lmod:
+        if count > 10:
+            break
+        count += 1
+        
+        luaPath = lmod[module]
+        moduleVersion = lmod[module][luaPath]["fullName"]
+        logger.debug(moduleVersion)
+        testFilePath = os.path.join(config.TEST_PATH, module, "run.sh")
+
+        # Arguments to the sbatch command
+        args = []
+        dependencies = "-"
+
+        # Check if custom test config (in tests_config.yaml) has been provided and parse it
+        if(moduleVersion in yaml_config.keys()):
+            testFilePath = yaml_config[moduleVersion]["path"]
+            print("Info: Using custom file path " + testFilePath +" for " + moduleVersion)
+            if("args" in yaml_config[moduleVersion]):
+                for arg in yaml_config[moduleVersion]["args"].split(' '):
+                    args.append(arg)
+                print("Info: Using custom dependency " + str(args) + " for " + moduleVersion)
+                dependencies = "Custom config"
+                
+        logger.debug(testFilePath)
+
+        # Add all dependencies to args if not in test config
+        if len(args) == 0 and "parentAA" in lmod[module][luaPath]:
+            for dependency in lmod[module][luaPath]["parentAA"][0]:
+                if(len(dependencies) == 1):
+                    dependencies = dependency
+                else :
+                    dependencies += "," + dependency
+                args.append(dependency)
+                
+        logger.debug(dependencies)
+
+        # Submit test job
+        if(os.path.exists(testFilePath)):
+            cmd = ['sbatch', testFilePath]
+
+            # Setting trap conditions and module loads in the test files
+            addTrap(testFilePath)
+
+            args.append(moduleVersion)
+            cmd.extend(args)
+            logger.debug(cmd)
+            with subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True
+            ) as proc:
+                res_stdout = proc.stdout.read()
+                res_stderr = proc.stderr.read()
+            submitTime = time.time()
+            logger.debug(res_stdout)
+            logger.debug(res_stderr)
+            logger.debug("EXIT Code: {}".format(proc.returncode))
+
+            # Add the current job to the RUNNING_TESTS list
+            config.RUNNING_TESTS.append(Test(moduleVersion, dependencies, testFilePath, submitTime, None, 'N/A', proc, JobStatus.PENDING, res_stdout, res_stderr, TestStatus.NA, "-"))
+        else:
+            print("Error: Missing test file /data/apps/tests/" + module + "/run.sh for " + moduleVersion)
+            config.RUNNING_TESTS.append(Test(moduleVersion, dependencies, testFilePath, time.time(), None, 'N/A', None, JobStatus.MISSING, None, None, TestStatus.MISSING, "-"))
+
 
 def submitJob(lmod, yaml_config, module, _moduleVersion = None):
     '''
@@ -421,6 +496,9 @@ def startTests(args):
         for arg in args.moduleversion:
             logger.debug(arg) 
             submitJob(lmod, config, arg.split('/')[0], arg)
+    
+    if(args.testall):
+        submitAllJobs(lmod, config)
                  
 
 def main():
