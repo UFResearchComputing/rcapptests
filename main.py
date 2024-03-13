@@ -260,26 +260,26 @@ def checkJobStatus(args):
 
 def append_bash_code(file_path):
     bash_code = '''
-    # BEGIN
-    set -o errtrace
-    trap 'catch $?' ERR
-    catch() {
-    echo "apptests caught an error:"
-    if [ "$1" != "0" ]; then
-        echo "Error code $1. Terminating!"
-        exit $1
-    fi
-    }
+# BEGIN
+set -o errtrace
+trap 'catch $?' ERR
+catch() {
+echo "apptests caught an error:"
+if [ "$1" != "0" ]; then
+    echo "Error code $1. Terminating!"
+    exit $1
+fi
+}
 
-    modules="ml"
+modules="ml"
 
-    for module in "$@"; do
-    modules+=" $module"
-    done
-    module purge .
+for module in "$@"; do
+modules+=" $module"
+done
+module purge .
 
-    eval "$modules"
-    # END
+eval "$modules"
+# END
     '''
     with open(file_path, 'r') as file:
         lines = file.readlines()
