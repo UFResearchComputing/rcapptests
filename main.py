@@ -221,6 +221,7 @@ def checkJobStatus(args):
             #  If module name is invalid or test file is missing, add this job to 'testsCompleted' with respective status
             if(job.module not in testsCompleted and (job.jobStatus == JobStatus.MISSING or job.jobStatus == JobStatus.INVALID)):
                 logger.debug(job.jobStatus)
+                remove_bash_code(job.filepath)
                 testsCompleted[job.module + str(job.dependencies)] = ()
                 continue
             # If job is submitted, check if there is any new status
@@ -244,6 +245,7 @@ def checkJobStatus(args):
                         job.testStatus = TestStatus.FAILED    
 
                     if(job.testStatus is not TestStatus.RUNNING and job.module not in testsCompleted):
+                        remove_bash_code(job.filepath)
                         testsCompleted[job.module + str(job.dependencies)] = testStatus
 
         # After processing the entire batch of test jobs for new upates, genrate the latest report
@@ -256,6 +258,63 @@ def checkJobStatus(args):
             logger.debug("Waiting for thread2")
             sys.exit(0)
 
+def append_bash_code(file_path):
+    bash_code = '''
+    # BEGIN
+    set -o errtrace
+    trap 'catch $?' ERR
+    catch() {
+    echo "apptests caught an error:"
+    if [ "$1" != "0" ]; then
+        echo "Error code $1. Terminating!"
+        exit $1
+    fi
+    }
+
+    modules="ml"
+
+    for module in "$@"; do
+    modules+=" $module"
+    done
+    module purge .
+
+    eval "$modules"
+    # END
+    '''
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+    modified_lines = []
+    addedTrap = False
+
+    for line in lines:
+        if addedTrap or line.startswith('#'):
+            modified_lines.append(line)
+        else:
+            modified_lines.append(bash_code + '\n')
+            addedTrap = True
+
+    with open(file_path, 'w') as file:
+        file.writelines(modified_lines)
+
+def remove_bash_code(file_path):
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+    print(lines)
+    modified_lines = []
+    inTrapBlock = False
+
+    for line in lines:
+        if line.startswith('# BEGIN'):
+            inTrapBlock = True
+        if line.startswith('# END'):
+            inTrapBlock = False
+            continue
+
+        if not inTrapBlock:
+            modified_lines.append(line)
+
+    with open(file_path, 'w') as file:
+        file.writelines(modified_lines)
 
 def submitJob(lmod, yaml_config, module, _moduleVersion = None):
     '''
@@ -321,6 +380,8 @@ def submitJob(lmod, yaml_config, module, _moduleVersion = None):
             # Submit test job
             if(os.path.exists(testFilePath)):
                 cmd = ['sbatch', testFilePath]
+
+                append_bash_code(testFilePath)
 
                 args.append(moduleVersion)
                 cmd.extend(args)
