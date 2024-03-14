@@ -16,6 +16,7 @@ class TestStatus(Enum):
     
 __version = "1.0.0"
 TEST_PATH = "/data/apps/tests/"
+REPORT_PATH = "/data/apps/tests/apptests/Reports/"
 STATIC_OUTPUT = ""
 DYNAMIC_OUTPUT = ""
 RUNNING_TESTS = []
