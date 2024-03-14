@@ -3,7 +3,6 @@
    Author: Sohaib Uddin Syed (sohaibuddinsyed@ufl.edu), June 2023 - Present 
 """
 
-import config
 import time
 import json
 from loguru import logger
@@ -11,8 +10,8 @@ from datetime import datetime
 from rich.console import Console
 from rich.table import Table
 
-JobStatus = config.JobStatus
-TestStatus = config.TestStatus
+import config
+from report_handler import JobStatus, TestStatus
 
 class Color:
     UNAVAILABLE = "[blue]"
