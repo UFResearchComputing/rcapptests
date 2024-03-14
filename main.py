@@ -6,20 +6,17 @@
 import argparse
 import sys
 import os
-import subprocess
 import time
 import threading
 import logging
-import json
 import yaml
 from loguru import logger
 import config
-import output
+import reportHandler.report_generator as report_generator
 import subprocess
 import shlex
 import json
-import os 
-
+import hashlib
 
 JobStatus = config.JobStatus
 TestStatus = config.TestStatus
@@ -96,9 +93,10 @@ def parse_args(print_help=False):
     parser.add_argument(
         "-testall",
         "--testall",
-        required = False,
+        action="store_true",
+        default=False,
         help = """
-                Runs tests for all modules in the system. 
+                Runs tests for all modules in the system.
             """,
     )
     parser.add_argument(
@@ -228,8 +226,8 @@ def checkJobStatus(args):
             #  If module name is invalid or test file is missing, add this job to 'testsCompleted' with respective status
             if(job.module not in testsCompleted and (job.jobStatus == JobStatus.MISSING or job.jobStatus == JobStatus.INVALID)):
                 logger.debug(job.jobStatus)
-                if(os.path.exists(job.filepath)):
-                    removeTrap(job.filepath)
+                # if(os.path.exists(job.filepath)):
+                #     removeTrap(job.filepath)
                 testsCompleted[job.module + str(job.dependencies)] = ()
                 continue
             # If job is submitted, check if there is any new status
@@ -253,13 +251,13 @@ def checkJobStatus(args):
                         job.testStatus = TestStatus.FAILED    
 
                     if(job.testStatus is not TestStatus.RUNNING and job.module not in testsCompleted):
-                        removeTrap(job.filepath)
+                        # removeTrap(job.filepath)
                         testsCompleted[job.module + str(job.dependencies)] = testStatus
 
         # After processing the entire batch of test jobs for new upates, genrate the latest report
-        output.generateReport(report_name, args)
+        report_generator.generateReport(report_name, args)
         if(len(testsCompleted) == len(config.RUNNING_TESTS)):
-            output.generateReport(report_name, args, exit=True)
+            report_generator.generateReport(report_name, args, exit=True)
             print("Success: Program completed")
             print("Success: Check the report - /data/apps/tests/apptests/Reports/" + report_name + ".txt (.json also available)")
             print("Success: Check slurm logs for a particular test - /data/apps/tests/apptests/slurm_logs/<job_id>.log\n")
@@ -284,12 +282,20 @@ def addTrap(file_path):
         if addedTrap or line.startswith('#') or line.startswith('\n'):
             modified_lines.append(line)
         else:
-            modified_lines.append(bash_code)
+            modified_lines.append(bash_code + "\n")
             modified_lines.append(line)
             addedTrap = True
 
-    with open(file_path, 'w') as file:
+    input_bytes = file_path.encode('utf-8')
+    # Compute the SHA-256 hash
+    sha_hash = hashlib.sha256(input_bytes)
+
+    # Return the hexadecimal representation of the hash
+    newPath = '/data/apps/tests/apptests/temp/' + sha_hash.hexdigest()
+
+    with open(newPath, 'w') as file:
         file.writelines(modified_lines)
+    return newPath
 
 def removeTrap(file_path):
     with open(file_path, 'r') as file:
@@ -312,69 +318,9 @@ def removeTrap(file_path):
         file.writelines(modified_lines)
 
 def submitAllJobs(lmod, yaml_config):
-    count = 0
     for module in lmod:
-        if count > 10:
-            break
-        count += 1
-        
-        luaPath = lmod[module]
-        moduleVersion = lmod[module][luaPath]["fullName"]
-        logger.debug(moduleVersion)
-        testFilePath = os.path.join(config.TEST_PATH, module, "run.sh")
-
-        # Arguments to the sbatch command
-        args = []
-        dependencies = "-"
-
-        # Check if custom test config (in tests_config.yaml) has been provided and parse it
-        if(moduleVersion in yaml_config.keys()):
-            testFilePath = yaml_config[moduleVersion]["path"]
-            print("Info: Using custom file path " + testFilePath +" for " + moduleVersion)
-            if("args" in yaml_config[moduleVersion]):
-                for arg in yaml_config[moduleVersion]["args"].split(' '):
-                    args.append(arg)
-                print("Info: Using custom dependency " + str(args) + " for " + moduleVersion)
-                dependencies = "Custom config"
-                
-        logger.debug(testFilePath)
-
-        # Add all dependencies to args if not in test config
-        if len(args) == 0 and "parentAA" in lmod[module][luaPath]:
-            for dependency in lmod[module][luaPath]["parentAA"][0]:
-                if(len(dependencies) == 1):
-                    dependencies = dependency
-                else :
-                    dependencies += "," + dependency
-                args.append(dependency)
-                
-        logger.debug(dependencies)
-
-        # Submit test job
-        if(os.path.exists(testFilePath)):
-            cmd = ['sbatch', testFilePath]
-
-            # Setting trap conditions and module loads in the test files
-            addTrap(testFilePath)
-
-            args.append(moduleVersion)
-            cmd.extend(args)
-            logger.debug(cmd)
-            with subprocess.Popen(
-                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True
-            ) as proc:
-                res_stdout = proc.stdout.read()
-                res_stderr = proc.stderr.read()
-            submitTime = time.time()
-            logger.debug(res_stdout)
-            logger.debug(res_stderr)
-            logger.debug("EXIT Code: {}".format(proc.returncode))
-
-            # Add the current job to the RUNNING_TESTS list
-            config.RUNNING_TESTS.append(Test(moduleVersion, dependencies, testFilePath, submitTime, None, 'N/A', proc, JobStatus.PENDING, res_stdout, res_stderr, TestStatus.NA, "-"))
-        else:
-            print("Error: Missing test file /data/apps/tests/" + module + "/run.sh for " + moduleVersion)
-            config.RUNNING_TESTS.append(Test(moduleVersion, dependencies, testFilePath, time.time(), None, 'N/A', None, JobStatus.MISSING, None, None, TestStatus.MISSING, "-"))
+    #    submitJob(lmod, yaml_config, module)
+        pass
 
 
 def submitJob(lmod, yaml_config, module, _moduleVersion = None):
@@ -390,7 +336,7 @@ def submitJob(lmod, yaml_config, module, _moduleVersion = None):
 
         config.RUNNING_TESTS.append(Test(module, "-", "-", time.time(), time.time(), 'N/A', None, JobStatus.INVALID, None, None, TestStatus.MISSING, "-"))
         return
-    
+
     # Check if valid module/version
     if _moduleVersion is not None :
         moduleVersion = [(module, luaPath) for module in lmod for luaPath in lmod[module] if _moduleVersion == lmod[module][luaPath]['fullName']]
@@ -401,7 +347,7 @@ def submitJob(lmod, yaml_config, module, _moduleVersion = None):
 
             config.RUNNING_TESTS.append(Test(_moduleVersion, "-", "-", time.time(), time.time(), 'N/A', None, JobStatus.INVALID, None, None, TestStatus.MISSING, "-"))
             return
-        
+
     logger.debug("Valid module or module/version " + str(_moduleVersion))
 
     # Parse lmod dict for dependency details
@@ -424,7 +370,7 @@ def submitJob(lmod, yaml_config, module, _moduleVersion = None):
                         args.append(arg)
                     print("Info: Using custom dependency " + str(args) + " for " + moduleVersion)
                     dependencies = "Custom config"
-                    
+
             logger.debug(testFilePath)
 
             # Add all dependencies to args if not in test config
@@ -439,11 +385,11 @@ def submitJob(lmod, yaml_config, module, _moduleVersion = None):
             logger.debug(dependencies)
 
             # Submit test job
-            if(os.path.exists(testFilePath)):
-                cmd = ['sbatch', testFilePath]
-
+            if(os.path.exists(testFilePath) and os.access(testFilePath, os.R_OK)):
                 # Setting trap conditions and module loads in the test files
-                addTrap(testFilePath)
+                newPath = addTrap(testFilePath)
+
+                cmd = ['sbatch', newPath]
 
                 args.append(moduleVersion)
                 cmd.extend(args)
@@ -504,8 +450,8 @@ def startTests(args):
 def main():
     args = parse_args()
 
-    if not (args.module or args.moduleversion):
-        print("'-m' or '-mv' flags required. Please specify atleast one module to test. See help with '-h' flag for help.")
+    if not (args.testall or args.module or args.moduleversion):
+        print("'-testall or -m' or '-mv' flags required. Please specify atleast one module to test. See help with '-h' flag for help.")
         exit(1)
 
     if args.output :
