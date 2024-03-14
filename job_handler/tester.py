@@ -1,11 +1,12 @@
+import os
 import yaml
 import subprocess
 import shlex
 import json
 from loguru import logger 
 
-import status
-import job_handler.dispatcher as dispatcher
+from job_handler import status
+from job_handler import dispatcher
 
 def get_raw_json(args):
     '''

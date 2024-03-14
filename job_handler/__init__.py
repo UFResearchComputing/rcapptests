@@ -1,4 +1,4 @@
-from test_class import Test
+from jobhandler.test_class import Test
 import config
 
 JobStatus = config.JobStatus
