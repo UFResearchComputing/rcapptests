@@ -1,10 +1,11 @@
 import sys
 import time
 import subprocess
-import logger
+from loguru import logger
 
 import config
 from report_handler import report_generator
+from job_handler import JobStatus, TestStatus
 
 testStatus = {}
 
@@ -88,11 +89,10 @@ def checkJobStatus(args):
                         testsCompleted[job.module + str(job.dependencies)] = testStatus
 
         # After processing the entire batch of test jobs for new upates, genrate the latest report
-        report_generator.generateReport(report_name, args)
+        report_generator.generate_report(report_name, args)
         if(len(testsCompleted) == len(config.RUNNING_TESTS)):
-            report_generator.generateReport(report_name, args, exit=True)
+            report_generator.generate_report(report_name, args, exit=True)
             print("Success: Program completed")
             print("Success: Check the report - /data/apps/tests/apptests/Reports/" + report_name + ".txt (.json also available)")
             print("Success: Check slurm logs for a particular test - /data/apps/tests/apptests/slurm_logs/<job_id>.log\n")
-            logger.debug("Waiting for thread2")
             sys.exit(0)
