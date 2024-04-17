@@ -5,6 +5,7 @@
 
 import argparse
 import sys
+
 # TODO: Move config to a toml config file e.g. rcappstests.toml
 import config
 from job_handler import tester
@@ -38,7 +39,7 @@ def _parse_args(print_help=False):
         paths will be shown once tests complete
         Note: Custom test script paths and dependencies can be provided in
         $APPTESTS_DIR/tests_config.yaml.
-        """
+        """,
     )
     parser.add_argument(
         "--version",
@@ -52,7 +53,7 @@ def _parse_args(print_help=False):
         "-m",
         "--module",
         type=str,
-        nargs='+',
+        nargs="+",
         required=False,
         help=""" MODULE should not include the version. Runs test for all versions(s) of the MODULE
         provided. """,
@@ -60,7 +61,7 @@ def _parse_args(print_help=False):
     parser.add_argument(
         "-mv",
         "--moduleversion",
-        nargs='+',
+        nargs="+",
         required=False,
         help="""MODULEVERSION: <module>/<version>. Runs test for the specific version of the module
         provided.""",
@@ -79,9 +80,13 @@ def _parse_args(print_help=False):
         "-v", "--verbose", action="store_true", default=False, help="verbose output"
     )
     parser.add_argument(
-        "-o", "--output", type=str, default="All",
+        "-o",
+        "--output",
+        type=str,
+        default="All",
         help="""Output fields. Accepted fields are
-        [Module,Dependency,Time,JobStatus,TestStatus,JobId,ExitCode,TestFile]""")
+        [Module,Dependency,Time,JobStatus,TestStatus,JobId,ExitCode,TestFile]""",
+    )
 
     args = parser.parse_args()
     if print_help:
@@ -113,6 +118,5 @@ def main():
     tester.startTests(args, AppTest_Instance)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-
