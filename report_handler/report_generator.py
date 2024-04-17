@@ -11,7 +11,7 @@ from rich.console import Console
 from rich.table import Table
 
 import config
-from report_handler import JobStatus, TestStatus
+from test_handler.test import JobStatus, TestStatus
 
 class Color:
     UNAVAILABLE = "[blue]"
@@ -43,7 +43,7 @@ def generate_summary_data(jobs_submitted_cnt, tests_passed_cnt, tests_failed_cnt
     summary_table.add_row(str(jobs_submitted_cnt), str(tests_passed_cnt), str(tests_failed_cnt))
     return summary_table
 
-def generate_report_data(table, report_name, args):
+def generate_report_data(AppTest_Instance, table, report_name, args):
     '''
         Populates test result in the main table,
         Generates .txt and .json report files
@@ -55,10 +55,10 @@ def generate_report_data(table, report_name, args):
     tests_passed_cnt, tests_failed_cnt, jobs_submitted_cnt, invalid_input_cnt, tests_missing_cnt = 0, 0, 0, 0, 0
 
     # Process each test status and generate row data
-    for i in range(len(config.RUNNING_TESTS)):
+    test_idx = 0
+    for curr_test in AppTest_Instance.get_running_tests():
         curr_row = []
         curr_json_obj = {}
-        curr_test = config.RUNNING_TESTS[i]
         
         # Process job status
         job_color = Color.FAIL
@@ -72,8 +72,8 @@ def generate_report_data(table, report_name, args):
         elif curr_test.jobStatus == JobStatus.MISSING:
             tests_missing_cnt += 1
             job_color = Color.WARNING
-        elif curr_test.endTime is None:
-            curr_test.endTime = time.time()
+        # elif curr_test.endTime is None:
+        #     curr_test.endTime = time.time()
 
         # Process test status
         testColor = Color.FAIL
@@ -84,24 +84,25 @@ def generate_report_data(table, report_name, args):
         elif curr_test.testStatus == TestStatus.COMPLETED:
             tests_passed_cnt += 1
             testColor = Color.SUCCESS
-            if curr_test.endTime is None:
-                curr_test.endTime = time.time()
-        elif curr_test.testStatus == TestStatus.FAILED:
+            # if curr_test.endTime is None:
+            #     curr_test.endTime = time.time()
+        else: 
             tests_failed_cnt += 1
-            if curr_test.endTime is None:
-                curr_test.endTime = time.time()
+            # if curr_test.endTime is None:
+            #     curr_test.endTime = time.time()
 
         # Calculate duration
-        if curr_test.endTime is not None:
+        elapsedSeconds = 0
+        if curr_test.endTime is not None and curr_test.startTime is not None:
             elapsedSeconds = curr_test.endTime - curr_test.startTime
-        else:
+        elif curr_test.startTime is not None:
             elapsedSeconds = time.time() - curr_test.startTime
 
         elapsedTime = time.strftime('%H:%M:%S', time.gmtime(elapsedSeconds))
         
         # Append all data as a row
         moduleName = curr_test.module
-        curr_row.append(str(i + 1))
+        curr_row.append(str(test_idx + 1))
 
         if add_all_columns or "Module" in args.output:
             curr_row.append(moduleName)
@@ -137,7 +138,8 @@ def generate_report_data(table, report_name, args):
 
         # Add row into the table and json file
         table.add_row(*curr_row)
-        json_dict["sno_" + str(i + 1)] = curr_json_obj
+        json_dict["sno_" + str(test_idx + 1)] = curr_json_obj
+        test_idx += 1
 
     # Generate summary after the report is complete
     summaryTable = generate_summary_data(jobs_submitted_cnt, tests_passed_cnt, tests_failed_cnt)
@@ -184,7 +186,7 @@ def generate_report_schema(args):
     
     return table
 
-def generate_report(testStartTime, args, exit=False):
+def generate_report(AppTest_Instance, testStartTime, args, exit=False):
     '''
         Driver method to generate report (.txt, .json) with all the required tables
     '''
@@ -203,7 +205,7 @@ def generate_report(testStartTime, args, exit=False):
         table = generate_report_schema(args)
 
         # Populate main table along with summary and failed status tables
-        table, summaryTable, failedTable = generate_report_data(table, report_name, args)
+        table, summaryTable, failedTable = generate_report_data(AppTest_Instance, table, report_name, args)
 
         # Write all tables to .txt file
         console.print(table)

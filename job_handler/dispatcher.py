@@ -1,68 +1,66 @@
 import config
 import os
-import time
 from loguru import logger 
 import subprocess
 
-from job_handler import Test
-from job_handler import bash_broilerplate
-from job_handler import JobStatus, TestStatus
+from test_handler.test import Test
+from job_handler import trap_handler
 
-def submitAllJobs(lmod, yaml_config):
+def submit_all_jobs(AppTest_Instance, lmod, yaml_config):
     for module in lmod:
-    #    submitJob(lmod, yaml_config, module)
+    # submit_job(lmod, yaml_config, module)
         pass
 
 
-def submitJob(lmod, yaml_config, module, _moduleVersion = None):
+def submit_job(AppTest_Instance, lmod, yaml_config, module, _module_version = None):
     '''
         Submits slurm jobs for valid modules provided
     '''
-    logger.debug(_moduleVersion)
+    logger.debug(_module_version)
 
     # Check if valid module name
     if module not in lmod.keys() :
         print("Error: Invalid module '" + module + "'")
         print("Warning: Maybe you have entered '<module>/<version>' with a '-m' flag. Use '-mv' instead.")
-
-        config.RUNNING_TESTS.append(Test(module, "-", "-", time.time(), time.time(), 'N/A', None, JobStatus.INVALID, None, None, TestStatus.MISSING, "-"))
+        # Mark the test as invalid
+        AppTest_Instance.add_test(Test.invalid_test(module))
         return
 
     # Check if valid module/version
-    if _moduleVersion is not None :
-        moduleVersion = [(module, luaPath) for module in lmod for luaPath in lmod[module] if _moduleVersion == lmod[module][luaPath]['fullName']]
-        logger.debug(moduleVersion)
-        if len(moduleVersion) == 0 :
-            print("Error: Invalid version '" + _moduleVersion + "'")
+    if _module_version is not None :
+        module_version = [(module, luaPath) for module in lmod for luaPath in lmod[module] if _module_version == lmod[module][luaPath]['fullName']]
+        logger.debug(module_version)
+        if len(module_version) == 0 :
+            print("Error: Invalid version '" + _module_version + "'")
             print("Warning: Maybe you have entered '<module>' with a '-mv' flag. Use '-m' instead.")
-
-            config.RUNNING_TESTS.append(Test(_moduleVersion, "-", "-", time.time(), time.time(), 'N/A', None, JobStatus.INVALID, None, None, TestStatus.MISSING, "-"))
+            # Mark the test as invalid
+            AppTest_Instance.add_test(Test.invalid_test(_module_version))
             return
 
-    logger.debug("Valid module or module/version " + str(_moduleVersion))
+    logger.debug("Valid module or module/version " + str(_module_version))
 
     # Parse lmod dict for dependency details
     for luaPath in lmod[module]:
-        moduleVersion = lmod[module][luaPath]["fullName"]
-        logger.debug(moduleVersion)
-        if(_moduleVersion is None or moduleVersion == _moduleVersion):
-            testFilePath = os.path.join(config.TEST_PATH, module, "run.sh")
+        module_version = lmod[module][luaPath]["fullName"]
+        logger.debug(module_version)
+        if(_module_version is None or module_version == _module_version):
+            test_file_path = os.path.join(config.TEST_PATH, module, "apptests.sh")
 
             # Arguments to the sbatch command
             args = []
             dependencies = "-"
 
             # Check if custom test config (in tests_config.yaml) has been provided and parse it
-            if(moduleVersion in yaml_config.keys()):
-                testFilePath = yaml_config[moduleVersion]["path"]
-                print("Info: Using custom file path " + testFilePath +" for " + moduleVersion)
-                if("args" in yaml_config[moduleVersion]):
-                    for arg in yaml_config[moduleVersion]["args"].split(' '):
+            if(module_version in yaml_config.keys()):
+                test_file_path = yaml_config[module_version]["path"]
+                print("Info: Using custom file path " + test_file_path +" for " + module_version)
+                if("args" in yaml_config[module_version]):
+                    for arg in yaml_config[module_version]["args"].split(' '):
                         args.append(arg)
-                    print("Info: Using custom dependency " + str(args) + " for " + moduleVersion)
+                    print("Info: Using custom dependency " + str(args) + " for " + module_version)
                     dependencies = "Custom config"
 
-            logger.debug(testFilePath)
+            logger.debug(test_file_path)
 
             # Add all dependencies to args if not in test config
             if len(args) == 0 and "parentAA" in lmod[module][luaPath]:
@@ -76,13 +74,13 @@ def submitJob(lmod, yaml_config, module, _moduleVersion = None):
             logger.debug(dependencies)
 
             # Submit test job
-            if(os.path.exists(testFilePath) and os.access(testFilePath, os.R_OK)):
+            if(os.path.exists(test_file_path) and os.access(test_file_path, os.R_OK)):
                 # Setting trap conditions and module loads in the test files
-                newPath = bash_broilerplate.addTrap(testFilePath)
+                newPath = trap_handler.addTrap(test_file_path)
 
                 cmd = ['sbatch', newPath]
 
-                args.append(moduleVersion)
+                args.append(module_version)
                 cmd.extend(args)
                 logger.debug(cmd)
                 with subprocess.Popen(
@@ -90,13 +88,12 @@ def submitJob(lmod, yaml_config, module, _moduleVersion = None):
                 ) as proc:
                     res_stdout = proc.stdout.read()
                     res_stderr = proc.stderr.read()
-                submitTime = time.time()
                 logger.debug(res_stdout)
                 logger.debug(res_stderr)
                 logger.debug("EXIT Code: {}".format(proc.returncode))
 
                 # Add the current job to the RUNNING_TESTS list
-                config.RUNNING_TESTS.append(Test(moduleVersion, dependencies, testFilePath, submitTime, None, 'N/A', proc, JobStatus.PENDING, res_stdout, res_stderr, TestStatus.NA, "-"))
+                AppTest_Instance.add_test(Test.new_test(module_version, dependencies, test_file_path, proc, res_stdout, res_stderr))
             else:
-                print("Error: Missing test file /data/apps/tests/" + module + "/run.sh for " + moduleVersion)
-                config.RUNNING_TESTS.append(Test(moduleVersion, dependencies, testFilePath, time.time(), None, 'N/A', None, JobStatus.MISSING, None, None, TestStatus.MISSING, "-"))
+                print("Error: Missing test file " + test_file_path)
+                AppTest_Instance.add_test(Test.missing_test(module_version, dependencies, test_file_path))

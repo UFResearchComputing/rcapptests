@@ -10,11 +10,14 @@ fi
 }
 
 modules="ml"
+APPTESTS_OUT_DIR="APPTESTS_OUT"
 
 for module in "$@"; do
 modules+=" $module"
+APPTESTS_OUT_DIR+="_$module"
 done
 module purge .
 
 eval "$modules"
+echo $modules
 # END
