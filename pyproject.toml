@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=42", "calver"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rcapptests"
+authors = [
+    {name = "Sohaib Syed", email = "sohaibuddinsyed@ufl.edu"},
+    {name = "Oleksandr Moskalenko", email = "moskalenko@ufl.edu"},
+]
+description = "RC Application Testing Tools"
+readme = "README.md"
+keywords = ["rc", "apps", "tests"]
+license = {text = "BSD-3-Clause"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Environment :: Console",
+    "Intended Audience :: Customer Service",
+    "Intended Audience :: System Administrators",
+    "Topic :: System :: Systems Administration",
+]
+requires-python = ">=3.8"
+dependencies = [
+    'calver',
+    'loguru',
+    'tomli',
+    'rich'
+    ]
+dynamic = ["version"]
+
+[project.urls]
+"Homepage" = "https://www.rc.ufl.edu"
+"Documentation" = "https://github.com/UFResearchComputing/rcapptests/docs"
+"Issues" = "https://github.com/UFResearchComputing/rcapptests/issues"
+"Repository" = "https://github.com/UFResearchComputing/rcapptests"
+
+[tool.setuptools.packages.find]
+where = ["src"]

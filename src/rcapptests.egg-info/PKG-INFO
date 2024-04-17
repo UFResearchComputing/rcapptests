@@ -1,0 +1,37 @@
+Metadata-Version: 2.1
+Name: rcapptests
+Version: 24.4.17
+Summary: RC Application Testing Tools
+Author-email: Sohaib Syed <sohaibuddinsyed@ufl.edu>, Oleksandr Moskalenko <moskalenko@ufl.edu>
+License: BSD-3-Clause
+Project-URL: Homepage, https://www.rc.ufl.edu
+Project-URL: Documentation, https://github.com/UFResearchComputing/rcapptests/docs
+Project-URL: Issues, https://github.com/UFResearchComputing/rcapptests/issues
+Project-URL: Repository, https://github.com/UFResearchComputing/rcapptests
+Keywords: rc,apps,tests
+Classifier: Programming Language :: Python :: 3
+Classifier: Development Status :: 4 - Beta
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Environment :: Console
+Classifier: Intended Audience :: Customer Service
+Classifier: Intended Audience :: System Administrators
+Classifier: Topic :: System :: Systems Administration
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+License-File: AUTHORS.md
+Requires-Dist: calver
+Requires-Dist: loguru
+Requires-Dist: tomli
+Requires-Dist: rich
+
+# rcapptests
+
+rcappstests stands for Research Computing Application Tests. This tool uses an environment modules
+system (Lmod is currently supported) to generate a list of all environment modules on a computing
+cluster and runs scheduled jobs on the same cluster to regularly test installed applications. A
+collection of test/example data and standardized job scripts is needed to run the tests.
+
+# Development
+Use the requirements.txt to install dependencies, for instance, in a conda environment.
