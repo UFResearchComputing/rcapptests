@@ -5,14 +5,20 @@
 
 import argparse
 import sys
-import logging
-from loguru import logger
-
+# TODO: Move config to a toml config file e.g. rcappstests.toml
 import config
 from job_handler import tester
 from test_handler.apptest import AppTest
+from rcapptests.common import _setup_logging
+from rcapptests.common import _get_config
 
-def parse_args(print_help=False):
+VERBOSE = False
+DEBUG = False
+CONFIG_FILENAME = "rcappstests.toml"
+CONFIG_VARIABLE = "RCAPPSTESTS_CONF"
+
+
+def _parse_args(print_help=False):
     class MyParser(argparse.ArgumentParser):
         def error(self, message):
             sys.stderr.write("error: %s\n" % message)
@@ -20,21 +26,18 @@ def parse_args(print_help=False):
             sys.exit(2)
 
     parser = MyParser(
-        usage="apptests [options] [group]",
+        usage="%(prog)s [options] [group]",
         description="""
-        
         Internal tool to run application tests.
 
         How to test an application:
-        1) Create a test script in /data/apps/test/<app> where 'app' is the 
-        application to be tested.
-        2) Modify the test script as needed.
+        1) Create a test script in /data/apps/test/<app> where 'app' is the application to be tested
+        2) Modify the test script as needed
         3) Run the tests. (Eg: apptests -m <app>, apptests -mv app/version etc)
         4) Check the report and slurm_logs in /data/apps/test/apptests/, full
-        paths will be shown once tests complete.
-
-        Note: Custom test sciript paths and dependencies can be provided in
-        $HPC_APPTESTS_DIR/tests_config.yaml.
+        paths will be shown once tests complete
+        Note: Custom test script paths and dependencies can be provided in
+        $APPTESTS_DIR/tests_config.yaml.
         """
     )
     parser.add_argument(
@@ -49,29 +52,25 @@ def parse_args(print_help=False):
         "-m",
         "--module",
         type=str,
-        nargs='+', 
-        required = False,
-        help = """
-                MODULE should not include the version. Runs test for all versions(s) of the MODULE provided. 
-            """,
+        nargs='+',
+        required=False,
+        help=""" MODULE should not include the version. Runs test for all versions(s) of the MODULE
+        provided. """,
     )
     parser.add_argument(
         "-mv",
         "--moduleversion",
-        nargs='+', 
-        required = False,
-        help = """
-                MODULEVERSION: <module>/<version>. Runs test for the specific version of the module provided. 
-            """,
+        nargs='+',
+        required=False,
+        help="""MODULEVERSION: <module>/<version>. Runs test for the specific version of the module
+        provided.""",
     )
     parser.add_argument(
         "-testall",
         "--testall",
         action="store_true",
         default=False,
-        help = """
-                Runs tests for all modules in the system.
-            """,
+        help=""" Runs tests for all modules in the system""",
     )
     parser.add_argument(
         "-d", "--debug", action="store_true", default=False, help=argparse.SUPPRESS
@@ -80,55 +79,40 @@ def parse_args(print_help=False):
         "-v", "--verbose", action="store_true", default=False, help="verbose output"
     )
     parser.add_argument(
-        "-o", "--output", type=str, default="All", help="Output fields. Accepted fields are [Module,Dependency,Time,JobStatus,TestStatus,JobId,ExitCode,TestFile]"
-    )
+        "-o", "--output", type=str, default="All",
+        help="""Output fields. Accepted fields are
+        [Module,Dependency,Time,JobStatus,TestStatus,JobId,ExitCode,TestFile]""")
 
+    args = parser.parse_args()
     if print_help:
         parser.print_help()
         sys.exit(0)
-    args = parser.parse_args()
+    if not (args.testall or args.module or args.moduleversion):
+        print_help = True
     return args
 
-def _setup_logging(debug, verbose):
-    """Set the correct logging level."""
-    logger.remove()
-    if verbose:
-        level = logging.INFO
-    else:
-        level = logging.WARN
-    if debug:
-        level = logging.DEBUG
-        logger.add(sys.stderr, level=level)
-        logger.debug("Debugging output enabled")
-    else:
-        logger.add(sys.stderr, level=level)
-    logger.debug("Logging level set to : {}", level)
 
 def main():
-    args = parse_args()
-
-    if not (args.testall or args.module or args.moduleversion):
-        print("'-testall or -m' or '-mv' flags required. Please specify atleast one module to test. See help with '-h' flag for help.")
-        exit(1)
-
-    if args.output :
-        outputFields = args.output.split(",")
-        for outputField in outputFields:
-            if outputField not in config.OUTPUT_FIELDS:
-                print(f"'{outputField}' is an invalid field name. See help with '-h' flag for more details.")
+    global DEBUG, VERBOSE
+    args = _parse_args()
+    logger = _setup_logging(args.debug, args.verbose)
+    config = _get_config(args.config, CONFIG_FILENAME, CONFIG_VARIABLE)
+    if args.output:
+        output_fields = args.output.split(",")
+        for output_field in output_fields:
+            if output_field not in config.OUTPUT_FIELDS:
+                print(f"'{output_field}' is an invalid config field name")
                 exit(1)
-        args.output = outputFields
-        
-    _setup_logging(args.debug, args.verbose)
-    logger.debug(args.module)
+    if args.module:
+        logger.debug(f"Testing module {args.module}")
 
-    print("Info: Testing is about to begin. This may take a while to finish.")
+    if VERBOSE:
+        print("Info: Testing is about to begin. This may take a while to finish.")
 
-    # Create an app test instace
     AppTest_Instance = AppTest()
-
-    # Start tests
     tester.startTests(args, AppTest_Instance)
 
-if __name__ == '__main__' :
+
+if __name__ == '__main__':
     main()
+
