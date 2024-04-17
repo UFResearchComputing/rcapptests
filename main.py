@@ -1,5 +1,5 @@
 """
-    This script will run tests on specified modules and provides a report
+    This framework will run tests on specified modules and provides a report
     Author: Sohaib Uddin Syed (sohaibuddinsyed@ufl.edu), June 2023 - Present
 """
 
@@ -10,6 +10,7 @@ from loguru import logger
 
 import config
 from job_handler import tester
+from test_handler.apptest import AppTest
 
 def parse_args(print_help=False):
     class MyParser(argparse.ArgumentParser):
@@ -123,8 +124,11 @@ def main():
 
     print("Info: Testing is about to begin. This may take a while to finish.")
 
+    # Create an app test instace
+    AppTest_Instance = AppTest()
+
     # Start tests
-    tester.startTests(args)
+    tester.startTests(args, AppTest_Instance)
 
 if __name__ == '__main__' :
     main()

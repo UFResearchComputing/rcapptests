@@ -5,12 +5,12 @@ import shlex
 import json
 from loguru import logger 
 
-from job_handler import status
-from job_handler import dispatcher
+import config
+from job_handler import dispatcher, status
 
 def get_raw_json(args):
     '''
-        Adopted from code written by Alex in /apps/lmod/admin/
+        Adopted from code written by Alex (om@rc.ufl.edu) in /apps/lmod/admin/
         Returns a dict with lmod data
     '''
     spider = "/apps/lmod/lmod/libexec/spider"
@@ -47,43 +47,42 @@ def get_raw_json(args):
         logger.debug(raw_data)
     return raw_data
 
-def startTests(args): 
+def startTests(args, AppTest_Instance): 
     '''
-        Loads lmod data, custom yaml configs and calls submitJob() for the module(s) to be tested
+        Loads lmod data, custom yaml configs and calls submit_job() for the module(s) to be tested
     '''
-
     # Reading module list from spider  
-    lmod = get_raw_json(args)
+    # lmod = get_raw_json(args)
 
     '''Alternate way to read lmod data, make sure to refresh the file with latest data first'''
-    #with open("/apps/apptests/lmod_spider_output.txt") as fh:
-    #   lmod = json.load(fh)
-    #  print("Warning: Using lmod data from lmod_spider_output.txt which might be outdated")
+    with open("/apps/apptests/lmod_spider_output.txt") as fh:
+        lmod = json.load(fh)
+        print("Warning: Using lmod data from lmod_spider_output.txt which might be outdated")
     
     # Reading test configurations from tests_config.yaml
-    with open("/apps/apptests/tests_config.yaml", "r") as stream:
+    with open(config.TEST_CONFIG, "r") as stream:
         try:
-            config = yaml.safe_load(stream)
+            yaml_config = yaml.safe_load(stream)
         except yaml.YAMLError as exc:
             logger.debug(exc)
-            print("YAML config file error. Please check the file.")
+            print("YAML yaml_config file error. Please check the file.")
 
     # Tests all versions of the specified modules
     if(args.module):
         for module in args.module:    
             logger.debug(module)      
-            dispatcher.submitJob(lmod, config, module)
+            dispatcher.submit_job(AppTest_Instance, lmod, yaml_config, module)
     
     # Tests a specific module/version 
     if(args.moduleversion):
         for arg in args.moduleversion:
             logger.debug(arg) 
-            dispatcher.submitJob(lmod, config, arg.split('/')[0], arg)
+            dispatcher.submit_job(AppTest_Instance, lmod, yaml_config, arg.split('/')[0], arg)
     
     if(args.testall):
-        dispatcher.submitAllJobs(lmod, config)
+        dispatcher.submit_all_jobs(AppTest_Instance, lmod, yaml_config)
         
     logger.debug("startTests Done")
 
     # Tests running via SLURM now monitor status
-    status.checkJobStatus(args)
+    status.checkJobStatus(args, AppTest_Instance)
