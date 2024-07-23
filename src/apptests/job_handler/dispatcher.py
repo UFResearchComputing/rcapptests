@@ -93,7 +93,7 @@ def submit_job(AppTest_Instance, lmod, yaml_config, module, _module_version = No
                 logger.debug("EXIT Code: {}".format(proc.returncode))
 
                 # Add the current job to the RUNNING_TESTS list
-                AppTest_Instance.add_test(Test.new_test(module_version, dependencies, test_file_path, proc, res_stdout, res_stderr))
+                AppTest_Instance.add_test(Test.new_test(module_version, dependencies, os.path.join(module, "apptests.sh"), proc, res_stdout, res_stderr))
             else:
-                print("Error: Missing test file " + test_file_path)
+                print("Error: Cannot open or missing test file " + test_file_path)
                 AppTest_Instance.add_test(Test.missing_test(module_version, dependencies, test_file_path))

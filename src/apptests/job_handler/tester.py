@@ -47,7 +47,7 @@ def get_raw_json(args):
         logger.debug(raw_data)
     return raw_data
 
-def startTests(args, AppTest_Instance): 
+def start_tests(args, AppTest_Instance): 
     '''
         Loads lmod data, custom yaml configs and calls submit_job() for the module(s) to be tested
     '''
@@ -82,7 +82,7 @@ def startTests(args, AppTest_Instance):
     if(args.testall):
         dispatcher.submit_all_jobs(AppTest_Instance, lmod, yaml_config)
         
-    logger.debug("startTests Done")
+    logger.debug("start_tests Done")
 
     # Tests running via SLURM now monitor status
-    status.checkJobStatus(args, AppTest_Instance)
+    status.check_job_status(args, AppTest_Instance)
