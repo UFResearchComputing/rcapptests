@@ -19,9 +19,10 @@
     </li>
     <li><a href="#usage">Usage</a></li>
     <li><a href="#contribution-guide-for-hipergator-users">Contributing</a></li>
+    <li><a href="#deploying-rcapptests-on-hipergator-cluster">Deploying</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#authors">Authors</a></li>
-    <li><a href="#acknowledgements">Acknowledgements</a></li>
+  
   </ol>
 </details>
 
@@ -106,4 +107,7 @@ dist/
 ```
 - Test by running ```rcapptests```.
 - If a rollback is required, install the distribution ```python3 -m pip install /apps/rcapptests/dist/*.whl``` else copy ```/apps/rcapptests/dev/``` into ```/apps/rcapptests/dist/```.
+
+  # Authors
+  
 
