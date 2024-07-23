@@ -13,7 +13,7 @@
     <li>
       <a href="#testing-applications-on-hipergator-cluster">Testing Applications on HiPerGator Cluster</a>
       <ul>
-        <li><a href="#creating-rcapptests.sh">Creating rcapptests.sh</a></li>
+        <li><a href="#creating-rcapptestssh">Creating rcapptests.sh</a></li>
         <li><a href="#usage">Usage</a></li>
       </ul>
     </li>
