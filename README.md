@@ -5,32 +5,49 @@
   <summary>Table of Contents</summary>
   <ol>
     <li>
-      <a href="#about-the-project">What is rcapptests</a>
+      <a href="#what-is-rcapptests">What is rcapptests</a>
       <ul>
-        <li><a href="#built-with">Built With</a></li>
+        <li><a href="#architecture">Architecture</a></li>
       </ul>
     </li>
     <li>
-      <a href="#getting-started">Getting Started</a>
+      <a href="#testing-applications-on-hipergator-cluster">Testing Applications on HiPerGator Cluster</a>
       <ul>
-        <li><a href="#dependencies">Dependencies</a></li>
-        <li><a href="#installation">Installation</a></li>
+        <li><a href="#creating-rcapptests.sh">Creating rcapptests.sh</a></li>
+        <li><a href="#usage">Usage</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#contribution-guide-for-hipergator-users">Contributing</a></li>
-    <li><a href="#deploying-rcapptests-on-hipergator-cluster">Deploying</a></li>
+   <li>
+    <a href="#development-guide">Development Guide</a>
+    <ul>
+      <li><a href="#project-structure">Project Structure</a></li>
+      <li><a href="#contribution-guide-for-hipergator-cluster">Contributing</a></li>
+      <li><a href="#deploying-rcapptests-on-hipergator-cluster">Deploying</a></li>
+    </ul>
+  </li>
     <li><a href="#license">License</a></li>
     <li><a href="#authors">Authors</a></li>
   
   </ol>
 </details>
 
+# What is rcapptests?
 rcapptests stands for Research Computing Application Tests. This tool uses an environment modules
 system (Lmod is currently supported) to generate a list of all environment modules on a computing
 cluster and runs scheduled jobs on the same cluster to regularly test installed applications. A
 collection of test/example data and standardized job scripts is needed to run the tests.
 
+## Architecture
+
+
+# Testing Applications on HiPerGator Cluster
+## Creating rcapptests.sh
+## Usage
+
+
+# Development Guide
+## Project Structure
+- This project has the following directory structure:
 ```
 rcapptests /
 ├── LICENSE
@@ -45,26 +62,26 @@ rcapptests /
         └── report_handler/*
         └── main.py
 ```
-- This project is packaged using Setuptools backend and has the following directory structure:
-# Contribution Guide for HiPerGator Users
+
+## Contribution Guide for HiPerGator Cluster
 This is an open source package and contributions are welcome. Please follow the steps to contribute:
 - Fork [rcapptests](https://github.com/UFResearchComputing/rcapptests>).
 - Inorder to start running locally you should setup:
     - A conda environemt (preferrable in /blue)
     - A development directory
- ## Step 1: Conda environment
+ ### Step 1: Conda environment
  - Create a path based conda environment with python ```conda create -p <path> python=3.10```.
  - Activate the environment.
  - Install any packages required in this environment.
 
- ## Step 2: Development Directory
+ ### Step 2: Development Directory
 - In order to run rcapptests, fork [rcapptests](https://github.com/UFResearchComputing/rcapptests).
 - Initializa an empty repository (git init) and then pull your forked repository (preferrably into /blue).
 - This is your working directory.
 
-## Step3: Running rcapptests locally
+### Step3: Running rcapptests locally
 - Make sure the conda environment created in Step 1 is active.
-- Generate [distribution packages](https://packaging.python.org/glossary/#term-distribution-package) for the rcapptests package, run this command from the local directory where you have pyproject.toml:
+- This project is packaged using [Setuptools](https://packaging.python.org/en/latest/key_projects/#setuptools) backend. To generate [distribution packages](https://packaging.python.org/glossary/#term-distribution-package) for the rcapptests package, run this command from the local directory where you have pyproject.toml:
 ```sh
 python3 -m build
 ```
@@ -82,7 +99,7 @@ dist/
 
 Make changes, run apptests locally and test thoroughly. Create feature branches in your forked repository and raise PRs when ready.
 
-# Deploying rcapptests on HiPerGator Cluster
+## Deploying rcapptests on HiPerGator Cluster
 This guide is for deploying rcapptests on HiPerGator (/apps/rcapptests/) after any new changes. 
 - In a local directory, clone [rcapptests](https://github.com/UFResearchComputing/rcapptests>). This is your working directory.
 - Activate the production conda environment, ```conda activate /apps/rcapptests```
@@ -108,6 +125,11 @@ dist/
 - Test by running ```rcapptests```.
 - If a rollback is required, install the distribution ```python3 -m pip install /apps/rcapptests/dist/*.whl``` else copy ```/apps/rcapptests/dev/``` into ```/apps/rcapptests/dist/```.
 
-  # Authors
+# License 
+UFResearchComputing/rcapptests is licensed under the [MIT License](https://github.com/UFResearchComputing/rcapptests/blob/main/LICENSE).
+
+# Authors
+- Sohaib Syed <sohaibuddinsyed@ufl.edu/syedsohaib074@gmail.com>
+- Oleksandr Moskalenko <moskalenko@ufl.edu>
   
 
