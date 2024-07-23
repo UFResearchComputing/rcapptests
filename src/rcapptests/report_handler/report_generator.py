@@ -125,7 +125,7 @@ def generate_report_data(AppTest_Instance, table, report_name, args):
             curr_json_obj["JobId"] = curr_test.job_id
 
         if add_all_columns or "SlurmLog" in args.output:
-            curr_row.append("$SLUMRLOG_DIR/" + curr_test.job_id + ".log")
+            curr_row.append("$SLURMLOGS_DIR/" + curr_test.job_id + ".log")
             curr_json_obj["SlurmLog"] = "$SLURMLOGS_DIR/" + curr_test.job_id
 
         if add_all_columns or "JobStatus" in args.output:
