@@ -1,7 +1,12 @@
 from test_handler.test import Test
 
 class AppTest(object):
-    # A list of submitted tests
+    '''
+        A driver class to keep track of tests that have completed and tests submitted (either running or pending)
+        All these tests are kept in memory
+    '''
+
+    # A list of submitted tests (currently submitted to SLURM)
     RUNNING_TESTS = []
     # A dict that keeps track of the completed tests so far
     COMPLETED_TESTS = {}   
