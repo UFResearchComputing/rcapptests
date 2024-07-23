@@ -45,7 +45,7 @@ rcapptests /
         └── main.py
 ```
 - This project is packaged using Setuptools backend and has the following directory structure:
-## Contribution Guide for HiPerGator Users
+# Contribution Guide for HiPerGator Users
 This is an open source package and contributions are welcome. Please follow the steps to contribute:
 - Fork [rcapptests](https://github.com/UFResearchComputing/rcapptests>).
 - Inorder to start running locally you should setup:
