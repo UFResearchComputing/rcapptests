@@ -1,4 +1,3 @@
-#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
@@ -16,42 +15,6 @@ import sys
 import tomli
 from loguru import logger
 from pathlib import Path
-
-
-def _setup_logging(debug=False, verbose=False, logfile=None):
-    """Set the correct logging level and logger sinks."""
-    global logger
-    logger.remove()
-    global DEBUG
-    DEBUG = False
-    global VERBOSE
-    VERBOSE = False
-    if verbose:
-        VERBOSE = True
-    if debug:
-        DEBUG = True
-        VERBOSE = True
-    else:
-        DEBUG = False
-    if verbose:
-        level = logging.INFO
-    else:
-        level = logging.WARN
-    if debug:
-        level = logging.DEBUG
-        logger.add(sys.stderr, level=level)
-        logger.debug("Debugging output enabled")
-        if logfile:
-            logger.debug("Logging to {}", logfile)
-    else:
-        logger.add(sys.stderr, level=level)
-        if logfile:
-            logger.info("Logging to {}", logfile)
-    if logfile:
-        logger.add(logfile, level=level)
-    logger.debug("Logging level set to : {}", level)
-    return logger
-
 
 def _get_config(args, config_file=None, config_filename=None, config_var=None):
     """

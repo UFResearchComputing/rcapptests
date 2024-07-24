@@ -1,4 +1,4 @@
-from test_handler.test import Test
+from rcapptests.test_handler.test import Test
 
 class AppTest(object):
     '''

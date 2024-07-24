@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: rcapptests
-Version: 24.4.17
+Version: 24.7.24
 Summary: RC Application Testing Tools
 Author-email: Sohaib Syed <sohaibuddinsyed@ufl.edu>, Oleksandr Moskalenko <moskalenko@ufl.edu>
 License: BSD-3-Clause
@@ -21,14 +21,24 @@ Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 License-File: LICENSE
 License-File: AUTHORS.md
-Requires-Dist: calver
-Requires-Dist: loguru
-Requires-Dist: tomli
-Requires-Dist: rich
+Requires-Dist: build>=1.2.1
+Requires-Dist: calver>=2022.6.26
+Requires-Dist: colorama>=0.4.6
+Requires-Dist: loguru>=0.7.2
+Requires-Dist: markdown-it-py>=3.0.0
+Requires-Dist: mdurl>=0.1.2
+Requires-Dist: packaging>=24.1
+Requires-Dist: pygments>=2.17.2
+Requires-Dist: pyproject-hooks>=1.1.0
+Requires-Dist: pyyaml>=6.0.1
+Requires-Dist: rich>=13.7.1
+Requires-Dist: tomli>=2.0.1
+Requires-Dist: tqdm>=4.66.4
+Requires-Dist: typing_extensions>=4.10.0
 
 # rcapptests
 
-rcappstests stands for Research Computing Application Tests. This tool uses an environment modules
+rcapptests stands for Research Computing Application Tests. This tool uses an environment modules
 system (Lmod is currently supported) to generate a list of all environment modules on a computing
 cluster and runs scheduled jobs on the same cluster to regularly test installed applications. A
 collection of test/example data and standardized job scripts is needed to run the tests.

@@ -1,15 +1,13 @@
 import os
 import hashlib
 
-import config
-
 def read_bash_code(file_path):
     with open(file_path, 'r') as file:
         bash_code = file.read()
     return bash_code
 
-def addTrap(file_path):
-    bash_code = read_bash_code(config.TRAP_FILE)
+def addTrap(config, file_path):
+    bash_code = read_bash_code(config['TRAP_FILE'])
     with open(file_path, 'r') as file:
         lines = file.readlines()
     modified_lines = []
@@ -30,7 +28,7 @@ def addTrap(file_path):
     sha_hash = hashlib.sha256(input_bytes)
 
     # Return the hexadecimal representation of the hash
-    newPath = config.TEMP_TEST_FILE + sha_hash.hexdigest()
+    newPath = config['TEMP_TEST_FILE'] + sha_hash.hexdigest()
 
     with open(newPath, 'w') as file:
         file.writelines(modified_lines)

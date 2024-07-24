@@ -16,8 +16,8 @@ from setuptools import setup
 
 def long_now_version():
     now = datetime.datetime.now()
-    return now.strftime("%y") + "." + now.strftime("%-m.%-d")
-
+    version = now.strftime("%y") + "." + now.strftime("%-m.%-d")
+    return version
 
 setup(
     use_calver=long_now_version,

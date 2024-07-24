@@ -7,10 +7,9 @@ from tqdm import tqdm
 from loguru import logger
 from rich.progress import Progress
 
-import config
-from report_handler import report_generator
-from test_handler.test import JobStatus, TestStatus, Test
-from test_handler.apptest import AppTest
+from rcapptests.report_handler import report_generator
+from rcapptests.test_handler.test import JobStatus, TestStatus, Test
+from rcapptests.test_handler.apptest import AppTest
 
 def cancelJob(job_id):
     cmd = ["scancel", job_id]
@@ -66,7 +65,7 @@ def kill_test(job_id):
     
     return True if proc.returncode is not None else False
 
-def check_timeout(curr_test: Test):
+def check_timeout(config, curr_test: Test):
     job_runtime = 0
     if curr_test.end_time is not None and curr_test.start_time is not None:
         job_runtime = curr_test.end_time - curr_test.start_time
@@ -74,7 +73,7 @@ def check_timeout(curr_test: Test):
         job_runtime = time.time() - curr_test.start_time
 
     logger.debug("The runtime of the job is:" + str(job_runtime) + " " + str(time.time()) + " " + str(curr_test.start_time))
-    if job_runtime > config.MAX_TEST_RUNTIME:
+    if job_runtime > config['MAX_TEST_RUNTIME']:
         return True
     return False
 
@@ -154,7 +153,7 @@ def update_status(curr_test: Test, curr_test_status: tuple):
         curr_test.exitCode = SACCT_exit_code
         curr_test.end_time = time.time()
 
-def check_job_status(args, AppTest_Instance):
+def check_job_status(args, config, AppTest_Instance):
     '''
         Checks test status and updates the report
 
@@ -178,10 +177,10 @@ def check_job_status(args, AppTest_Instance):
     terminate = False
     # Report is generated with the current timestamp
     report_name = time.strftime("%Y-%m-%d-%H_%M_%S")
-    print("Results in: $REPORTS_DIR/" + report_name + ".txt (.json also available)")
+    print("Results in: $REPORTS_DIR/" + report_name + ".txt (.json also available)\n")
 
     # Create a tqdm progress bar
-    progress_bar = tqdm(total=total_test_count, desc="Running Tests")
+    # progress_bar = tqdm(total=total_test_count, desc="Running Tests")
 
     # Loops until all test jobs submitted complete with some status
     while not terminate:
@@ -207,16 +206,18 @@ def check_job_status(args, AppTest_Instance):
                 logger.debug(curr_test.job_status)
                 logger.debug(curr_test.test_status)
                 AppTest_Instance.add_completed_test(curr_test_id, curr_test)
-                progress_bar.update(1)
+                # progress_bar.update(1)
+                print("Tests completed: " + str(AppTest_Instance.get_completed_tests_count()) + "/" + str(total_test_count))
                 continue
             
             # Check if current test exceeded timeout interval
-            if check_timeout(curr_test):
+            if check_timeout(config, curr_test):
                 kill_test(curr_test.job_id)
                 curr_test.job_status = JobStatus.TIMEOUT
                 curr_test.test_status = TestStatus.KILLED
                 AppTest_Instance.add_completed_test(curr_test_id, curr_test)
-                progress_bar.update(1)
+                # progress_bar.update(1)
+                print("Tests completed: " + str(AppTest_Instance.get_completed_tests_count()) + "/" + str(total_test_count))
                 continue
             
             # Get job status from SACCT
@@ -230,14 +231,15 @@ def check_job_status(args, AppTest_Instance):
                 logger.debug(curr_test.job_status)
                 logger.debug(curr_test.test_status)
                 AppTest_Instance.add_completed_test(curr_test_id, curr_test)
-                progress_bar.update(1)
+                # progress_bar.update(1)
+                print("Tests completed: " + str(AppTest_Instance.get_completed_tests_count()) + "/" + str(total_test_count))
 
-        report_generator.generate_report(AppTest_Instance, report_name, args)
+        report_generator.generate_report(config, AppTest_Instance, report_name, args)
     
     # After processing the entire batch of test jobs for new updates, generate the latest report
     if terminate:
-        report_generator.generate_report(AppTest_Instance, report_name, args, exit=True)
-        print("Success: Program completed")
+        report_generator.generate_report(config, AppTest_Instance, report_name, args, exit=True)
+        print("\nSuccess: Program completed")
         print("Success: Check the report - $REPORTS_DIR/" + report_name + ".txt (.json also available)")
         print("Success: Check slurm logs for a particular test, paths available in the Report.\n")
         

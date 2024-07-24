@@ -10,8 +10,7 @@ from datetime import datetime
 from rich.console import Console
 from rich.table import Table
 
-import config
-from test_handler.test import JobStatus, TestStatus
+from rcapptests.test_handler.test import JobStatus, TestStatus
 
 class Color:
     UNAVAILABLE = "[blue]"
@@ -193,11 +192,11 @@ def generate_report_schema(args):
     
     return table
 
-def generate_report(AppTest_Instance, testStartTime, args, exit=False):
+def generate_report(config, AppTest_Instance, testStartTime, args, exit=False):
     '''
         Driver method to generate report (.txt, .json) with all the required tables
     '''
-    report_name = config.REPORT_PATH + testStartTime
+    report_name = config['REPORT_PATH'] + testStartTime
     with open(report_name + ".txt", "wt") as report_file:
         console = Console(file=report_file, width=750)
 
