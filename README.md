@@ -13,7 +13,7 @@
     <li>
       <a href="#testing-applications-on-hipergator-cluster">Testing Applications on HiPerGator Cluster</a>
       <ul>
-        <li><a href="#creating-rcapptestssh">Creating rcapptests.sh</a></li>
+        <li><a href="#rcapptestssh">rcapptests.sh</a></li>
         <li><a href="#usage">Usage</a></li>
       </ul>
     </li>
@@ -61,7 +61,7 @@ Therefore, it makes sense to test each invocation seperately.
 
 
 # Testing Applications on HiPerGator Cluster
-## 1) Creating rcapptests.sh
+## 1) rcapptests.sh
 From the previous section, it is clear that the ```rcapptests.sh``` file is central to the tool. Let's talk about it.
 
 ```sh
