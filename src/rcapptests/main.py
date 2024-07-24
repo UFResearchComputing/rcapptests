@@ -5,12 +5,13 @@
 
 import argparse
 import sys
+import os
 import logging
 from loguru import logger
 
-import config
-from job_handler import tester
-from test_handler.apptest import AppTest
+from rcapptests.common import _get_config
+from rcapptests.job_handler import tester
+from rcapptests.test_handler.apptest import AppTest
 
 # Arg parsers setup for rcapptests bin
 def parse_args(print_help=False):
@@ -21,29 +22,37 @@ def parse_args(print_help=False):
             sys.exit(2)
 
     parser = MyParser(
-        usage="apptests [options] [group]",
-        description="""
-        
-        Internal tool to run application tests.
-
-        How to test an application:
-        1) Create a test script in /data/apps/test/<app> where 'app' is the 
-        application to be tested.
-        2) Modify the test script as needed.
-        3) Run the tests. (Eg: apptests -m <app>, apptests -mv app/version etc)
-        4) Check the report and slurm_logs in /data/apps/test/apptests/, full
-        paths will be shown once tests complete.
-
-        Note: Custom test sciript paths and dependencies can be provided in
-        $HPC_APPTESTS_DIR/tests_config.yaml.
-        """
+        description = (
+            "_______________________________________________________________\n"
+            "|                                                             |\n"
+            "|           Internal tool to run application tests            |\n"
+            "|                                                             |\n"
+            "|   How to test an application:                               |\n"
+            "|   1) Create a test script in /data/apps/test/<app> where    |\n"
+            "|      'app' is the application to be tested.                 |\n"
+            "|   2) Copy the driver script rcapptests.sh from /data/apps/  |\n"
+            "|      tests/rcapptests/rcapptests.sh. Modify the driver      |\n"
+            "|      script to include tests.                               |\n"
+            "|   3) Run the tests. (Eg: apptests -m <app>, apptests -mv    |\n"
+            "|      app/version etc)                                       |\n"
+            "|   4) Check the report and slurm_logs in /data/apps/test/    |\n"
+            "|      rcapptests/*, full paths will be shown once tests      |\n"
+            "|      complete.                                              |\n"
+            "|                                                             |\n"
+            "|   Note: Custom test script paths and dependencies can be    |\n"
+            "|   provided in HPC_APPTESTS_DIR/tests_config.yaml.           |\n"
+            "|                                                             |\n"
+            "|   usage=rcapptests [options] [group]                        |\n"
+            "|_____________________________________________________________|\n"
+        ),
+        formatter_class=argparse.RawTextHelpFormatter
     )
     parser.add_argument(
         "--version",
         action="version",
         version="""%(prog)s
                         Version: {version}""".format(
-            version=config.__version
+            version=os.getenv('RCAPPTESTS_VERSION', None)
         ),
     )
     parser.add_argument(
@@ -52,27 +61,21 @@ def parse_args(print_help=False):
         type=str,
         nargs='+', 
         required = False,
-        help = """
-                MODULE should not include the version. Runs test for all versions(s) of the MODULE provided. 
-            """,
+        help = """MODULE should not include the version. Runs test for all versions(s) of the MODULE provided.""",
     )
     parser.add_argument(
         "-mv",
         "--moduleversion",
         nargs='+', 
         required = False,
-        help = """
-                MODULEVERSION: <module>/<version>. Runs test for the specific version of the module provided. 
-            """,
+        help = "MODULEVERSION: <module>/<version>. Runs test for the specific version of the module provided.",
     )
     parser.add_argument(
         "-testall",
         "--testall",
         action="store_true",
         default=False,
-        help = """
-                Runs tests for all modules in the system.
-            """,
+        help = "Runs tests for all modules in the system.",
     )
     parser.add_argument(
         "-d", "--debug", action="store_true", default=False, help=argparse.SUPPRESS
@@ -107,6 +110,8 @@ def _setup_logging(debug, verbose):
 
 def main():
     args = parse_args()
+    _setup_logging(args.debug, args.verbose)
+    config = _get_config(None, config_var='CONFIG_PATH')
 
     # Validate mandatory options
     if not (args.testall or args.module or args.moduleversion):
@@ -117,12 +122,11 @@ def main():
     if args.output :
         args_output_fields = args.output.split(",")
         for output_field in args_output_fields:
-            if output_field not in config.OUTPUT_FIELDS:
+            if output_field not in config['OUTPUT_FIELDS']:
                 print(f"'{output_field}' is an invalid field name. See help with '-h' flag for more details.")
                 exit(1)
         args.output = args_output_fields
         
-    _setup_logging(args.debug, args.verbose)
     logger.debug(args.module)
 
     print("Info: Testing is about to begin. This may take a while to finish.")
@@ -131,7 +135,7 @@ def main():
     AppTest_Instance = AppTest()
 
     # Start tests
-    tester.start_tests(args, AppTest_Instance)
+    tester.start_tests(args, config, AppTest_Instance)
 
 if __name__ == '__main__' :
     main()

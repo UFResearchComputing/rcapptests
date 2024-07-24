@@ -5,8 +5,7 @@ import shlex
 import json
 from loguru import logger 
 
-import config
-from job_handler import dispatcher, status
+from rcapptests.job_handler import dispatcher, status
 
 def get_raw_json(args):
     '''
@@ -47,7 +46,7 @@ def get_raw_json(args):
         logger.debug(raw_data)
     return raw_data
 
-def start_tests(args, AppTest_Instance): 
+def start_tests(args, config, AppTest_Instance): 
     '''
         Loads lmod data, custom yaml configs and calls submit_job() for the module(s) to be tested
     '''
@@ -60,7 +59,7 @@ def start_tests(args, AppTest_Instance):
         print("Warning: Using lmod data from lmod_spider_output.txt which might be outdated")
     
     # Reading test configurations from tests_config.yaml
-    with open(config.TEST_CONFIG, "r") as stream:
+    with open(config['TEST_CONFIG'], "r") as stream:
         try:
             yaml_config = yaml.safe_load(stream)
         except yaml.YAMLError as exc:
@@ -71,13 +70,13 @@ def start_tests(args, AppTest_Instance):
     if(args.module):
         for module in args.module:    
             logger.debug(module)      
-            dispatcher.submit_job(AppTest_Instance, lmod, yaml_config, module)
+            dispatcher.submit_job(AppTest_Instance, config, lmod, yaml_config, module)
     
     # Tests a specific module/version 
     if(args.moduleversion):
         for arg in args.moduleversion:
             logger.debug(arg) 
-            dispatcher.submit_job(AppTest_Instance, lmod, yaml_config, arg.split('/')[0], arg)
+            dispatcher.submit_job(AppTest_Instance, config, lmod, yaml_config, arg.split('/')[0], arg)
     
     if(args.testall):
         dispatcher.submit_all_jobs(AppTest_Instance, lmod, yaml_config)
@@ -85,4 +84,4 @@ def start_tests(args, AppTest_Instance):
     logger.debug("start_tests Done")
 
     # Tests running via SLURM now monitor status
-    status.check_job_status(args, AppTest_Instance)
+    status.check_job_status(args, config, AppTest_Instance)
