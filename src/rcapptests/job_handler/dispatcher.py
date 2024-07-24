@@ -1,10 +1,9 @@
-import config
 import os
 from loguru import logger 
 import subprocess
 
-from test_handler.test import Test
-from job_handler import trap_handler
+from rcapptests.test_handler.test import Test
+from rcapptests.job_handler import trap_handler
 
 def submit_all_jobs(AppTest_Instance, lmod, yaml_config):
     for module in lmod:
@@ -12,7 +11,7 @@ def submit_all_jobs(AppTest_Instance, lmod, yaml_config):
         pass
 
 
-def submit_job(AppTest_Instance, lmod, yaml_config, module, _module_version = None):
+def submit_job(AppTest_Instance, config,  lmod, yaml_config, module, _module_version = None):
     '''
         Submits slurm jobs for valid modules provided
     '''
@@ -44,7 +43,7 @@ def submit_job(AppTest_Instance, lmod, yaml_config, module, _module_version = No
         module_version = lmod[module][luaPath]["fullName"]
         logger.debug(module_version)
         if(_module_version is None or module_version == _module_version):
-            test_file_path = os.path.join(config.TEST_PATH, module, "apptests.sh")
+            test_file_path = os.path.join(config['TEST_PATH'], module, "rcapptests.sh")
 
             # Arguments to the sbatch command
             args = []
@@ -76,7 +75,7 @@ def submit_job(AppTest_Instance, lmod, yaml_config, module, _module_version = No
             # Submit test job
             if(os.path.exists(test_file_path) and os.access(test_file_path, os.R_OK)):
                 # Setting trap conditions and module loads in the test files
-                newPath = trap_handler.addTrap(test_file_path)
+                newPath = trap_handler.addTrap(config, test_file_path)
 
                 cmd = ['sbatch', newPath]
 
@@ -93,7 +92,7 @@ def submit_job(AppTest_Instance, lmod, yaml_config, module, _module_version = No
                 logger.debug("EXIT Code: {}".format(proc.returncode))
 
                 # Add the current job to the RUNNING_TESTS list
-                AppTest_Instance.add_test(Test.new_test(module_version, dependencies, test_file_path, proc, res_stdout, res_stderr))
+                AppTest_Instance.add_test(Test.new_test(module_version, dependencies, os.path.join(module, "rcapptests.sh"), proc, res_stdout, res_stderr))
             else:
-                print("Error: Missing test file " + test_file_path)
+                print("Error: Cannot open or missing test file " + test_file_path)
                 AppTest_Instance.add_test(Test.missing_test(module_version, dependencies, test_file_path))

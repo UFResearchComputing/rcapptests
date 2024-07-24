@@ -1,6 +1,6 @@
 """
    This script will generate report for tests
-   Author: Sohaib Uddin Syed (sohaibuddinsyed@ufl.edu), June 2023 - Present 
+   Author: Sohaib Uddin Syed (sohaibuddinsyed@ufl.edu/syedsohaib074@gmail.com)
 """
 
 import time
@@ -10,8 +10,7 @@ from datetime import datetime
 from rich.console import Console
 from rich.table import Table
 
-import config
-from test_handler.test import JobStatus, TestStatus
+from rcapptests.test_handler.test import JobStatus, TestStatus
 
 class Color:
     UNAVAILABLE = "[blue]"
@@ -62,41 +61,41 @@ def generate_report_data(AppTest_Instance, table, report_name, args):
         
         # Process job status
         job_color = Color.FAIL
-        if curr_test.jobStatus == JobStatus.SUBMITTED:
+        if curr_test.job_status == JobStatus.SUBMITTED:
             job_color = Color.SUCCESS
             jobs_submitted_cnt += 1
-        elif curr_test.jobStatus == JobStatus.PENDING:
+        elif curr_test.job_status == JobStatus.PENDING:
             job_color = Color.INPROGRESS
-        elif curr_test.jobStatus == JobStatus.INVALID:
+        elif curr_test.job_status == JobStatus.INVALID:
             invalid_input_cnt += 1
-        elif curr_test.jobStatus == JobStatus.MISSING:
+        elif curr_test.job_status == JobStatus.MISSING:
             tests_missing_cnt += 1
             job_color = Color.WARNING
-        # elif curr_test.endTime is None:
-        #     curr_test.endTime = time.time()
+        # elif curr_test.end_time is None:
+        #     curr_test.end_time = time.time()
 
         # Process test status
         testColor = Color.FAIL
-        if curr_test.testStatus == TestStatus.RUNNING:
+        if curr_test.test_status == TestStatus.RUNNING:
             testColor = Color.INPROGRESS
-        elif curr_test.testStatus == TestStatus.NA:
+        elif curr_test.test_status == TestStatus.NA:
             testColor = Color.UNAVAILABLE
-        elif curr_test.testStatus == TestStatus.COMPLETED:
+        elif curr_test.test_status == TestStatus.COMPLETED:
             tests_passed_cnt += 1
             testColor = Color.SUCCESS
-            # if curr_test.endTime is None:
-            #     curr_test.endTime = time.time()
+            # if curr_test.end_time is None:
+            #     curr_test.end_time = time.time()
         else: 
             tests_failed_cnt += 1
-            # if curr_test.endTime is None:
-            #     curr_test.endTime = time.time()
+            # if curr_test.end_time is None:
+            #     curr_test.end_time = time.time()
 
         # Calculate duration
         elapsedSeconds = 0
-        if curr_test.endTime is not None and curr_test.startTime is not None:
-            elapsedSeconds = curr_test.endTime - curr_test.startTime
-        elif curr_test.startTime is not None:
-            elapsedSeconds = time.time() - curr_test.startTime
+        if curr_test.end_time is not None and curr_test.start_time is not None:
+            elapsedSeconds = curr_test.end_time - curr_test.start_time
+        elif curr_test.start_time is not None:
+            elapsedSeconds = time.time() - curr_test.start_time
 
         elapsedTime = time.strftime('%H:%M:%S', time.gmtime(elapsedSeconds))
         
@@ -113,28 +112,32 @@ def generate_report_data(AppTest_Instance, table, report_name, args):
             curr_json_obj["Dependency"] = curr_test.dependencies
 
         if add_all_columns or "TestFile" in args.output:
-            curr_row.append(curr_test.filepath)
-            curr_json_obj["TestFile"] = curr_test.filepath
+            curr_row.append("$TESTS_DIR/" + curr_test.file_path)
+            curr_json_obj["TestFile"] = "$TESTS_DIR/" +  curr_test.file_path
 
         if add_all_columns or "Time" in args.output:
             curr_row.append(f"{elapsedTime}") 
             curr_json_obj["Time"] = elapsedTime
 
         if add_all_columns or "JobId" in args.output:
-            curr_row.append(curr_test.jobId)
-            curr_json_obj["JobId"] = curr_test.jobId
+            curr_row.append(curr_test.job_id)
+            curr_json_obj["JobId"] = curr_test.job_id
+
+        if add_all_columns or "SlurmLog" in args.output:
+            curr_row.append("$SLURMLOGS_DIR/" + curr_test.job_id + ".log")
+            curr_json_obj["SlurmLog"] = "$SLURMLOGS_DIR/" + curr_test.job_id
 
         if add_all_columns or "JobStatus" in args.output:
-            curr_row.append(job_color + f"{curr_test.jobStatus.value}")
-            curr_json_obj["JobStatus"] = curr_test.jobStatus.value
+            curr_row.append(job_color + f"{curr_test.job_status.value}")
+            curr_json_obj["JobStatus"] = curr_test.job_status.value
 
         if add_all_columns or "TestStatus" in args.output:
-            curr_row.append(testColor + f"{curr_test.testStatus.value}")
-            curr_json_obj["TestStatus"] = curr_test.testStatus.value
+            curr_row.append(testColor + f"{curr_test.test_status.value}")
+            curr_json_obj["TestStatus"] = curr_test.test_status.value
 
         if add_all_columns or "ExitCode" in args.output:
-            curr_row.append(testColor + f"{curr_test.exitCode}")
-            curr_json_obj["ExitCode"] = curr_test.exitCode
+            curr_row.append(testColor + f"{curr_test.exit_code}")
+            curr_json_obj["ExitCode"] = curr_test.exit_code
 
         # Add row into the table and json file
         table.add_row(*curr_row)
@@ -175,6 +178,9 @@ def generate_report_schema(args):
     if add_all_columns or "JobId" in args.output:
         table.add_column("Job Id", style="green", no_wrap=True)
 
+    if add_all_columns or "SlurmLog" in args.output:
+        table.add_column("Slurm Logs", style="green", no_wrap=True)
+
     if add_all_columns or "JobStatus" in args.output:
         table.add_column("Job Status", style="cyan", no_wrap=True)
 
@@ -186,11 +192,11 @@ def generate_report_schema(args):
     
     return table
 
-def generate_report(AppTest_Instance, testStartTime, args, exit=False):
+def generate_report(config, AppTest_Instance, testStartTime, args, exit=False):
     '''
         Driver method to generate report (.txt, .json) with all the required tables
     '''
-    report_name = config.REPORT_PATH + testStartTime
+    report_name = config['REPORT_PATH'] + testStartTime
     with open(report_name + ".txt", "wt") as report_file:
         console = Console(file=report_file, width=750)
 
@@ -212,4 +218,4 @@ def generate_report(AppTest_Instance, testStartTime, args, exit=False):
         console.print(summaryTable)
         console.print(failedTable)
 
-        logger.debug("Latest report generated in " + report_name)
+        logger.debug("Latest report generated in $REPORTS_DIR/" + testStartTime + ".txt")

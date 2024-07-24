@@ -1,6 +1,9 @@
 import time
 from enum import Enum
 
+'''
+    Enums to denote Job and Test statuses
+'''
 class JobStatus(Enum):
     PENDING = "PENDING"
     SUBMITTED = "SUBMITTED"
@@ -19,19 +22,23 @@ class TestStatus(Enum):
     SLURMERROR = "SLURMERROR"
 
 class Test(object):
-    def __init__(self, module, dependencies, filepath, startTime, endTime,  jobId, proc, jobStatus, jobOut, jobErr, testStatus, exitCode):
+    '''
+        This class represents all the data associated with a test. 
+        The framework manages all the tests as instances of this class
+    '''
+    def __init__(self, module, dependencies, file_path, start_time, end_time,  job_id, proc, job_status, job_out, job_err, test_status, exit_code):
         self.module = module
         self.dependencies = dependencies
-        self.filepath = filepath
-        self.startTime = startTime
-        self.endTime = endTime
-        self.jobId = jobId
+        self.file_path = file_path
+        self.start_time = start_time
+        self.end_time = end_time
+        self.job_id = job_id
         self.proc = proc
-        self.jobStatus = jobStatus
-        self.jobOut = jobOut
-        self.jobErr = jobErr
-        self.testStatus = testStatus
-        self.exitCode = exitCode
+        self.job_status = job_status
+        self.job_out = job_out
+        self.job_err = job_err
+        self.test_status = test_status
+        self.exit_code = exit_code
     
     @staticmethod 
     def new_test(module_version, dependencies, test_file_path, proc, res_stdout, res_stderr):
